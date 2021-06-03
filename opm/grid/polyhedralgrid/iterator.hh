@@ -33,7 +33,7 @@ namespace Dune
     PolyhedralGridIterator ( ExtraData data, const bool beginIterator )
     : Base( data )
     {
-      if( beginIterator )
+      if( beginIterator && data->size( codim ) > 0)
         entityImpl() = EntityImpl( data, EntitySeed( 0 ) );
     }
 
