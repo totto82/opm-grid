@@ -987,7 +987,11 @@ namespace Dune
       const int codim = EntitySeed :: codimension;
       if (codim==0)
       {
-        const int coordIndex = GlobalCoordinate :: dimension * cellVertices_[ seed.index() ][ i ];
+          // for cells in 2 dimentions without facetags we need to swap vertices since in UnstructuredGrid
+          // those are ordered counter clockwise,
+          const int crners = corners( seed );
+          const int idx  = (!grid_.cell_facetag && crners == 4 && EntitySeed :: dimension == 2 && i > 1 ) ? 5 - i : i;
+          const int coordIndex = GlobalCoordinate :: dimension * cellVertices_[ seed.index() ][ idx ];
           return copyToGlobalCoordinate( grid_.node_coordinates + coordIndex );
       }
       if (codim==1)
@@ -1566,62 +1570,54 @@ namespace Dune
           }
         }
 
-        // if no face_tag is available we set the reference element based
-        // on the number of nodes in a cell.
-        // By default set all types to None. This corresponds to hasPolygon
+        // if no face_tag is available we set the reference element to None.
+        // This corresponds to hasPolygon
         GeometryType tmp;
         tmp = Dune::GeometryTypes::none(dim);
         cellGeomTypes_.resize( numCells );
         std::fill( cellGeomTypes_.begin(), cellGeomTypes_.end(), tmp );
-
-        bool hasSimplex = false ;
-        bool hasCube    = false ;
-        bool hasPolyhedron = false;
+        geomTypes_.resize(dim + 1);
 
         for (int c = 0; c < numCells; ++c)
         {
           const int nVx = cellVertices_[ c ].size();
           if( nVx == 4 )
           {
-            cellGeomTypes_[ c ] = Dune::GeometryTypes::simplex(dim);
-            hasSimplex = true;
+            tmp = Dune::GeometryTypes::simplex(dim);
           }
           else if( nVx == 8 )
           {
-            cellGeomTypes_[ c ] = Dune::GeometryTypes::cube(dim);
-
-            hasCube = true;
+            tmp = Dune::GeometryTypes::cube(dim);
           }
           else
           {
-            hasPolyhedron = true;
+            tmp = Dune::GeometryTypes::none(dim);
           }
+          cellGeomTypes_[ c ] = tmp;
+          geomTypes_[0].push_back (tmp);
         }
-        // Propogate the cell geometry type to all codimensions
-        geomTypes_.resize(dim + 1);
-        for (int codim = 0; codim <= dim; ++codim)
+
+        const int numFaces = grid_.number_of_faces;
+        for( int face = 0 ; face < numFaces; ++face )
         {
-          if( hasSimplex )
+          const int nVx = grid_.face_nodepos[face+1] - grid_.face_nodepos[face];
+          if( nVx == 3 )
           {
-            tmp = Dune::GeometryTypes::simplex(dim - codim);
-            geomTypes_[ codim ].push_back( tmp );
+            tmp = Dune::GeometryTypes::simplex(dim - 1);
           }
-          else if ( hasCube )
+          else if( nVx == 4 )
           {
-            tmp = Dune::GeometryTypes::cube(dim - codim);
-            geomTypes_[ codim ].push_back( tmp );
-          }
-          else if (hasPolyhedron)
-          {
-            tmp = Dune::GeometryTypes::none(dim - codim);
-            geomTypes_[ codim ].push_back( tmp );
+            tmp = Dune::GeometryTypes::cube(dim - 1);
           }
           else
           {
-            OPM_THROW(std::runtime_error, "Grid error, unkown geometry type.");
+            tmp = Dune::GeometryTypes::none(dim - 1);
+          }
+          // Propogate the geometry type down the codimensions
+          for (int codim = 1; codim <= dim; ++codim) {
+              geomTypes_[ codim ].push_back( tmp );
           }
         }
-
       } // end else of ( grid_.cell_facetag )
 
       nBndSegments_ = 0;
