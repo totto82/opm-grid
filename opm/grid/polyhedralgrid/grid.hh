@@ -1146,16 +1146,8 @@ namespace Dune
     {
       if( Seed::codimension == 0 )
       {
-        if( cellGeomTypes_.empty() )
-        {
           assert( geomTypes( Seed::codimension ).size() == 1 );
           return geomTypes( Seed::codimension )[ 0 ];
-        }
-        else
-        {
-          assert( static_cast<size_t>(seed.index()) < cellGeomTypes_.size() );
-          return cellGeomTypes_[ seed.index() ];
-        }
       }
       else
       {
@@ -1336,8 +1328,6 @@ namespace Dune
       {
         cartDims_[ i ] = grid_.cartdims[ i ];
       }
-
-      cellGeomTypes_.clear();
 
       // setup list of cell vertices
       const int numCells = size( 0 );
@@ -1570,12 +1560,9 @@ namespace Dune
           }
         }
 
-        // if no face_tag is available we set the reference element to None.
-        // This corresponds to hasPolygon
+        // if no face_tag is available we set the reference element based
+        // on number of nodes
         GeometryType tmp;
-        tmp = Dune::GeometryTypes::none(dim);
-        cellGeomTypes_.resize( numCells );
-        std::fill( cellGeomTypes_.begin(), cellGeomTypes_.end(), tmp );
         geomTypes_.resize(dim + 1);
 
         for (int c = 0; c < numCells; ++c)
@@ -1593,7 +1580,6 @@ namespace Dune
           {
             tmp = Dune::GeometryTypes::none(dim);
           }
-          cellGeomTypes_[ c ] = tmp;
           geomTypes_[0].push_back (tmp);
         }
 
@@ -1688,9 +1674,6 @@ namespace Dune
     std::vector< std::vector< int > > cellVertices_;
 
     std::vector< GlobalCoordinate > unitOuterNormals_;
-
-    // geometry type of each cell if existing (if not then all are polyhedral)
-    std::vector< GeometryType >     cellGeomTypes_;
 
     mutable LeafIndexSet leafIndexSet_;
     mutable GlobalIdSet globalIdSet_;
