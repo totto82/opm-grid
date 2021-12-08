@@ -1513,7 +1513,9 @@ namespace Dune
             const int b = grid_.face_cells[ 2*face + 1 ];
 
             //assert( a >=0 || b >=0 );
-
+			if ( a < 0 && b < 0 )
+				std::cout << "a, b " << a << " " << b << std::endl;
+				
             if( grid_.face_areas[ face ] < 0 )
               std::abort();
 
@@ -1554,8 +1556,8 @@ namespace Dune
               normal[ d ] = grid_.face_normals[ face*dimworld + d ];
             }
 
-            //if( centerDiff.two_norm() < 1e-10 )
-              //std::abort();
+            if( centerDiff.two_norm() < 1e-10 )
+              std::cout << "centerDiff " << centerDiff.two_norm() << std::endl; //std::abort();
 
             // if diff and normal point in different direction, flip faces
             if( centerDiff * normal < 0 )
