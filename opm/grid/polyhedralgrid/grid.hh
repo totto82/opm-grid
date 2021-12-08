@@ -1512,7 +1512,7 @@ namespace Dune
             const int a = grid_.face_cells[ 2*face     ];
             const int b = grid_.face_cells[ 2*face + 1 ];
 
-            assert( a >=0 || b >=0 );
+            //assert( a >=0 || b >=0 );
 
             if( grid_.face_areas[ face ] < 0 )
               std::abort();
@@ -1554,8 +1554,8 @@ namespace Dune
               normal[ d ] = grid_.face_normals[ face*dimworld + d ];
             }
 
-            if( centerDiff.two_norm() < 1e-10 )
-              std::abort();
+            //if( centerDiff.two_norm() < 1e-10 )
+              //std::abort();
 
             // if diff and normal point in different direction, flip faces
             if( centerDiff * normal < 0 )
@@ -1581,12 +1581,12 @@ namespace Dune
         for (int c = 0; c < numCells; ++c)
         {
           const int nVx = cellVertices_[ c ].size();
-          if( nVx == 4 )
+          if( false && nVx == 4 )
           {
             cellGeomTypes_[ c ] = Dune::GeometryTypes::simplex(dim);
             hasSimplex = true;
           }
-          else if( nVx == 8 )
+          else if( false && nVx == 8 )
           {
             cellGeomTypes_[ c ] = Dune::GeometryTypes::cube(dim);
 
