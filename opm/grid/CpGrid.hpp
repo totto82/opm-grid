@@ -595,7 +595,15 @@ namespace Dune
         void postAdapt();
         /// --------------- Adaptivity (end) ---------------
 
+        /// extendGrid()
+        bool extendGrid(const CpGrid& grid2);
+
+
     private:
+        void copyAndOffset(std::vector<int>& vec1, std::vector<int> vec2, int offset) const;
+        void copyAndOffsetSparseTable(Opm::SparseTable<int>& tab1, Opm::SparseTable<int> tab2, int offset) const;
+        void copyAndOffsetC2P(std::vector<std::array<int,8>>& vec1, std::vector<std::array<int,8>> vec2, int offset) const;
+
         void updateCornerHistoryLevels(const std::vector<std::vector<std::array<int,2>>>& cornerInMarkedElemWithEquivRefinedCorner,
                                        const std::map<std::array<int,2>,std::array<int,2>>& elemLgrAndElemLgrCorner_to_refinedLevelAndRefinedCorner,
                                        const std::unordered_map<int,std::array<int,2>>& adaptedCorner_to_elemLgrAndElemLgrCorner,
@@ -1320,6 +1328,12 @@ namespace Dune
         int
         faceTag(const Cell2FacesRowIterator& cell_face) const;
 
+        template<int dim, class Table>
+        void 
+        copyAndOffsetEntityTable(Table& tab1, Table tab2, int offset) const; 
+
+        template<class Geo>
+        void copyGeometery(Geo& tab1, const Geo& tab2) const;
         //@}
 
         // ------------ End of simplified interface --------------
@@ -1645,6 +1659,28 @@ namespace Dune
 
     template<int dim>
     cpgrid::Entity<dim> createEntity(const CpGrid&, int, bool);
+
+    template<int dim, class Table>
+    void CpGrid::copyAndOffsetEntityTable(Table& tab1, Table tab2, int offset) const {    
+        const int n_rows = tab2.size();
+        for (int i = 0; i < n_rows; ++i) {
+            const cpgrid::EntityRep<dim> f(i, true);
+            auto row_data = tab2[f];
+            for (int c = 0; c < row_data.size(); c++) {
+                row_data[c].setValue(row_data[c].index() + offset, row_data[c].orientation());
+            }
+            //std::transform(cells.begin(), cells.end(), cells.begin(), [&](int x){return(x+nc);});
+            tab1.appendRow(row_data.begin(), row_data.end());
+        }
+    }
+    
+    template<class Geo>
+    void CpGrid::copyGeometery(Geo& tab1, const Geo& tab2) const {
+    for (const auto& p : tab2) {
+        tab1.push_back(p);
+    }
+}
+
 
 } // namespace Dune
 

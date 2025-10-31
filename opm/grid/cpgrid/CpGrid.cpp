@@ -2815,4 +2815,84 @@ void CpGrid::updateCornerHistoryLevels(const std::vector<std::vector<std::array<
     }
 }
 
+void CpGrid::copyAndOffset(std::vector<int>& vec1, std::vector<int> vec2, int offset) const {
+    std::transform(vec2.begin(), vec2.end(), vec2.begin(), [&](int x){return(x+offset);});
+    vec1.insert(vec1.begin(), vec2.begin(), vec2.end());
+}
+
+void CpGrid::copyAndOffsetSparseTable(Opm::SparseTable<int>& tab1, Opm::SparseTable<int> tab2, int offset) const{
+    for (const auto& row : tab2)
+        tab1.appendRow(row.begin()+offset, row.end()+offset);
+}
+
+void CpGrid::copyAndOffsetC2P(std::vector<std::array<int,8>>& vec1, std::vector<std::array<int,8>> vec2, int offset) const {
+	std::transform(vec2.begin(), vec2.end(), vec2.begin(), [&](std::array<int, 8> xs){
+		std::transform(xs.begin(), xs.end(), xs.begin(), [&](int x) {return (offset + x);});
+		return( xs );
+		});
+    vec1.insert(vec1.begin(), vec2.begin(), vec2.end());
+}
+
+bool CpGrid::extendGrid(const CpGrid& grid2) {
+    const int nc = this->numCells();
+    const int nf = this->numFaces();
+    const int nv = this->numVertices();
+    copyAndOffset(current_view_data_->global_cell_, grid2.current_view_data_->global_cell_, nc);
+    copyAndOffsetEntityTable<1>(current_view_data_->face_to_cell_, grid2.current_view_data_->face_to_cell_, nc);
+    copyAndOffsetEntityTable<0>(current_view_data_->cell_to_face_, grid2.current_view_data_->cell_to_face_, nf);
+    copyAndOffsetSparseTable(current_view_data_->face_to_point_, grid2.current_view_data_->face_to_point_, nv);
+	copyAndOffsetC2P(current_view_data_->cell_to_point_, grid2.current_view_data_->cell_to_point_, nv);
+
+    copyGeometery(*current_view_data_->geometry_.geomVector(std::integral_constant<int,0>()),
+                  *grid2.current_view_data_->geometry_.geomVector(std::integral_constant<int,0>()));
+    copyGeometery(*current_view_data_->geometry_.geomVector(std::integral_constant<int,1>()),
+                  *grid2.current_view_data_->geometry_.geomVector(std::integral_constant<int,1>()));
+    copyGeometery(*current_view_data_->geometry_.geomVector(std::integral_constant<int,3>()),
+                  *grid2.current_view_data_->geometry_.geomVector(std::integral_constant<int,3>()));
+				  
+	// NB Needs to be fixed
+	current_view_data_->logical_cartesian_size_[3] += grid2.current_view_data_->logical_cartesian_size_[3]; 
+    return true;
+
+     /*/
+    std::array<int, 3>                logical_cartesian_size_{};
+    /** @brief vector with the gobal cell index for each cell.
+     *
+     * Note the size of this container is determined by the
+     * the number of cells present on the process and the content
+     * by the mapping to the underlying global cartesian mesh..
+     */
+    /** @brief The tag of the faces. */
+    cpgrid::EntityVariable<enum face_tag, 1> face_tag_;
+    /** @brief The geometries representing the grid. */
+    //cpgrid::DefaultGeometryPolicy geometry_;
+    /** @brief The type of a point in the grid. */
+    typedef FieldVector<double, 3> PointType;
+    /** @brief The face normals of the grid. */
+    cpgrid::SignedEntityVariable<PointType, 1> face_normals_;
+    
+    
+    /** @brief The boundary ids. */
+    //cpgrid::EntityVariable<int, 1> unique_boundary_ids_;
+    /** @brief The index set of the grid (level). */
+    //std::unique_ptr<cpgrid::IndexSet> index_set_;
+    /** @brief The internal local id set (not exported). */
+    //std::shared_ptr<const cpgrid::IdSet> local_id_set_;
+    /** @brief The global id set (used also as local id set). */
+    //std::shared_ptr<LevelGlobalIdSet> global_id_set_;
+    /** @brief The indicator of the partition type of the entities */
+    //std::shared_ptr<PartitionTypeIndicator> partition_type_indicator_;
+    /** Mark elements to be refined **/
+    //std::vector<int> mark_;
+    /** Level of the current CpGridData (0 when it's "GLOBAL", 1,2,.. for LGRs). */
+   
+
+    /// \brief Object for collective communication operations.
+    //Communication ccobj_;
+
+    // Boundary information (optional).
+    //bool use_unique_boundary_ids_;
+
+}
+
 } // namespace Dune
