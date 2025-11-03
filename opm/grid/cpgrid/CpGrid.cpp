@@ -59,7 +59,7 @@
 #include <opm/grid/common/GridPartitioning.hpp>
 //#include <opm/grid/common/WellConnections.hpp>
 #include <opm/grid/common/CommunicationUtils.hpp>
-
+#include "processEclipseFormat.cpp"
 //#include <fstream>
 //#include <iostream>
 #include <algorithm>
@@ -2843,33 +2843,43 @@ bool CpGrid::extendGrid(const CpGrid& grid2) {
     copyAndOffsetSparseTable(current_view_data_->face_to_point_, grid2.current_view_data_->face_to_point_, nv);
 	copyAndOffsetC2P(current_view_data_->cell_to_point_, grid2.current_view_data_->cell_to_point_, nv);
 
-    copyGeometery(*current_view_data_->geometry_.geomVector(std::integral_constant<int,0>()),
-                  *grid2.current_view_data_->geometry_.geomVector(std::integral_constant<int,0>()));
-    copyGeometery(*current_view_data_->geometry_.geomVector(std::integral_constant<int,1>()),
-                  *grid2.current_view_data_->geometry_.geomVector(std::integral_constant<int,1>()));
     copyGeometery(*current_view_data_->geometry_.geomVector(std::integral_constant<int,3>()),
                   *grid2.current_view_data_->geometry_.geomVector(std::integral_constant<int,3>()));
+    copyGeometery(*current_view_data_->geometry_.geomVector(std::integral_constant<int,1>()),
+                  *grid2.current_view_data_->geometry_.geomVector(std::integral_constant<int,1>()));
 				  
+				  
+    // Cells
+    //cell_geom.reserve(nc);
+    MakeGeometry<3> mcellg(current_view_data_->geometry_.geomVector(std::integral_constant<int,3>()));
+	cpgrid::EntityVariable<cpgrid::Geometry<3, 3>, 0> cell_geom;
+	cell_geom.reserve(nc + grid2.numCells());
+	for (int c = 0;  c < nc; ++c) {
+		auto cell_centroids = this->cellCentroid(c);
+		auto cell_volumes = this->cellVolume(c);
+		auto c2p = current_view_data_->cell_to_point_[c];
+		cell_geom.push_back(mcellg(cell_centroids, cell_volumes, c2p));
+    }
+    for (int c = 0;  c < grid2.numCells(); ++c) {
+		auto cell_centroids = grid2.cellCentroid(c);
+		auto cell_volumes = grid2.cellVolume(c);
+		auto c2p = current_view_data_->cell_to_point_[c+nc];
+		cell_geom.push_back(mcellg(cell_centroids, cell_volumes, c2p));
+    }
+	*current_view_data_->geometry_.geomVector(std::integral_constant<int,0>()) = cell_geom;
+	
+	copyGeometery(current_view_data_->face_tag_, grid2.current_view_data_->face_tag_);
+	copyGeometery(current_view_data_->face_normals_, grid2.current_view_data_->face_normals_);
+
 	// NB Needs to be fixed
-	current_view_data_->logical_cartesian_size_[3] += grid2.current_view_data_->logical_cartesian_size_[3]; 
+	current_view_data_->logical_cartesian_size_[2] += grid2.current_view_data_->logical_cartesian_size_[2];	
+	
+	current_view_data_->index_set_ = std::make_unique<cpgrid::IndexSet>(current_view_data_->cell_to_face_.size(), (*current_view_data_->geometry_.geomVector(std::integral_constant<int,3>())).size());
+	
     return true;
 
      /*/
     std::array<int, 3>                logical_cartesian_size_{};
-    /** @brief vector with the gobal cell index for each cell.
-     *
-     * Note the size of this container is determined by the
-     * the number of cells present on the process and the content
-     * by the mapping to the underlying global cartesian mesh..
-     */
-    /** @brief The tag of the faces. */
-    cpgrid::EntityVariable<enum face_tag, 1> face_tag_;
-    /** @brief The geometries representing the grid. */
-    //cpgrid::DefaultGeometryPolicy geometry_;
-    /** @brief The type of a point in the grid. */
-    typedef FieldVector<double, 3> PointType;
-    /** @brief The face normals of the grid. */
-    cpgrid::SignedEntityVariable<PointType, 1> face_normals_;
     
     
     /** @brief The boundary ids. */

@@ -37,17 +37,16 @@ void testGridIteration( const GridView& gridView, const int nElem )
     ElemIterator elemIt = gridView.template begin<0>();
     ElemIterator elemEndIt = gridView.template end<0>();
     for (; elemIt != elemEndIt; ++elemIt) {
-		std::cout << numElem << std::endl;
         const Geometry& elemGeom = elemIt->geometry();
-        //if (std::abs(elemGeom.volume() - 1.0) > 1e-8)
+        if (std::abs(elemGeom.volume() - 1.0) > 1e-8)
             std::cout << "element's " << numElem << " volume is wrong:"<<elemGeom.volume()<<"\n";
 
         typename Geometry::LocalCoordinate local( 0.5 );
         typename Geometry::GlobalCoordinate global = elemGeom.global( local );
-        //typename Geometry::GlobalCoordinate center = elemGeom.center();
-        //if( (center - global).two_norm() > 1e-6 )
+        typename Geometry::GlobalCoordinate center = elemGeom.center();
+		if( (center - global).two_norm() > 1e-6 )
         {
-          //std::cout << "center = " << center << " global( localCenter ) = " << global << std::endl;
+          std::cout << "center = " << center << " global( localCenter ) = " << global << " " << std::endl;
         }
 
 
@@ -64,26 +63,26 @@ void testGridIteration( const GridView& gridView, const int nElem )
 
             if (intersection.neighbor())
             {
-              //if( numIs != intersection.indexInInside() )
+              if( numIs != intersection.indexInInside() )
                   std::cout << "num iit = " << numIs << " indexInInside " << intersection.indexInInside() << std::endl;
 
-              //if (std::abs(intersection.outside().geometry().volume() - 1.0) > 1e-8)
+              if (std::abs(intersection.outside().geometry().volume() - 1.0) > 1e-8)
                   std::cout << "outside element volume of intersection " << numIs << " of element " << numElem
                             << " volume is wrong: " << intersection.outside().geometry().volume() << std::endl;
 
-              //if (std::abs(intersection.inside().geometry().volume() - 1.0) > 1e-8)
+              if (std::abs(intersection.inside().geometry().volume() - 1.0) > 1e-8)
                   std::cout << "inside element volume of intersection " << numIs << " of element " << numElem
                             << " volume is wrong: " << intersection.inside().geometry().volume() << std::endl;
             }
         }
 
-        //if (numIs != 2 * GridView::dimension )
+        if (numIs != 2 * GridView::dimension )
             std::cout << "number of intersections is wrong for element " << numElem << "\n";
 
         ++ numElem;
     }
 
-    //if (numElem != nElem )
+    if (numElem != nElem )
         std::cout << "number of elements is wrong: " << numElem << ", expected " << nElem << std::endl;
 }
 
@@ -106,8 +105,11 @@ void testGrid(Grid& grid, const std::string& name, const size_t nElem, const siz
 
     testGridIteration( grid.leafGridView(), nElem );
 
+	std::cout << grid.leafGridView().size(0) << std::endl;
+	std::cout << grid.leafGridView().size(1) << std::endl;
+	std::cout << grid.leafGridView().size(3) << std::endl;
     std::cout << "create vertex mapper\n";
-  Dune::MultipleCodimMultipleGeomTypeMapper<GridView> mapper(grid.leafGridView(), Dune::mcmgVertexLayout());
+    Dune::MultipleCodimMultipleGeomTypeMapper<GridView> mapper(grid.leafGridView(), Dune::mcmgVertexLayout());
 
     std::cout << "VertexMapper.size(): " << mapper.size() << "\n";
     if (static_cast<size_t>(mapper.size()) != nVertices ) {
@@ -175,18 +177,23 @@ int main(int argc, char** argv )
 
     const auto& grid_leafView = grid.leafGridView();
     Dune::CartesianIndexMapper<Grid> grid_cartMapper =  Dune::CartesianIndexMapper<Grid>(grid);
-	
-	//std::cout << grid_cartMapper.cartesianIndex()
+
+	std::cout << "cart mapper " << grid_cartMapper.cartesianIndex(0) << std::endl;
     for (const auto& element: Dune::elements(grid_leafView)){
-        const auto& elemEclCentroid = ecl_grid.getCellCenter(grid_cartMapper.cartesianIndex(element.index()));
+		//continue;
+		std::cout << "elem idx " << grid_cartMapper.cartesianIndex(element.index()) << std::endl;
+        //const auto& elemEclCentroid = ecl_grid.getCellCenter(grid_cartMapper.cartesianIndex(element.index()));
+		//continue;
         const auto& elemCpGridEclCentroid_Entity = grid.getEclCentroid(element);
         const auto& elemCpGridEclCentroid_Index = grid.getEclCentroid(element.index());
+		//continue;
         for (int coord = 0; coord < 3; ++coord)
         {
-            assert(elemEclCentroid[coord] == elemCpGridEclCentroid_Entity[coord]);
-            assert(elemEclCentroid[coord] == elemCpGridEclCentroid_Index[coord]);
-            std::cout << "From Eclipse: " << elemEclCentroid[coord]
-                      << " From CpGrid (Entity): " << elemCpGridEclCentroid_Entity[coord]
+            //assert(elemEclCentroid[coord] == elemCpGridEclCentroid_Entity[coord]);
+            //assert(elemEclCentroid[coord] == elemCpGridEclCentroid_Index[coord]);
+			assert(elemCpGridEclCentroid_Entity[coord] == elemCpGridEclCentroid_Index[coord]);
+            //std::cout << "From Eclipse: " << elemEclCentroid[coord]
+            std::cout << " From CpGrid (Entity): " << elemCpGridEclCentroid_Entity[coord]
                       << " From CpGrid (Index): " << elemCpGridEclCentroid_Index[coord]<< '\n';
         }
         std::cout << " " << '\n';
