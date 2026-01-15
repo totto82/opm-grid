@@ -2817,7 +2817,7 @@ void CpGrid::updateCornerHistoryLevels(const std::vector<std::vector<std::array<
 
 void CpGrid::copyAndOffset(std::vector<int>& vec1, std::vector<int> vec2, int offset) const {
     std::transform(vec2.begin(), vec2.end(), vec2.begin(), [&](int x){return(x+offset);});
-    vec1.insert(vec1.begin(), vec2.begin(), vec2.end());
+    vec1.insert(vec1.end(), vec2.begin(), vec2.end());
 }
 
 void CpGrid::copyAndOffsetSparseTable(Opm::SparseTable<int>& tab1, Opm::SparseTable<int> tab2, int offset) const{
@@ -2830,51 +2830,60 @@ void CpGrid::copyAndOffsetC2P(std::vector<std::array<int,8>>& vec1, std::vector<
 		std::transform(xs.begin(), xs.end(), xs.begin(), [&](int x) {return (offset + x);});
 		return( xs );
 		});
-    vec1.insert(vec1.begin(), vec2.begin(), vec2.end());
+    vec1.insert(vec1.end(), vec2.begin(), vec2.end());
 }
 
 bool CpGrid::extendGrid(const CpGrid& grid2) {
     const int nc = this->numCells();
     const int nf = this->numFaces();
     const int nv = this->numVertices();
-    copyAndOffset(current_view_data_->global_cell_, grid2.current_view_data_->global_cell_, nc);
-    copyAndOffsetEntityTable<1>(current_view_data_->face_to_cell_, grid2.current_view_data_->face_to_cell_, nc);
-    copyAndOffsetEntityTable<0>(current_view_data_->cell_to_face_, grid2.current_view_data_->cell_to_face_, nf);
-    copyAndOffsetSparseTable(current_view_data_->face_to_point_, grid2.current_view_data_->face_to_point_, nv);
-	copyAndOffsetC2P(current_view_data_->cell_to_point_, grid2.current_view_data_->cell_to_point_, nv);
+    copyAndOffset(current_data_->back()->global_cell_, grid2.current_data_->back()->global_cell_, nc);
+    copyAndOffsetEntityTable<1>(current_data_->back()->face_to_cell_, grid2.current_data_->back()->face_to_cell_, nc);
+    copyAndOffsetEntityTable<0>(current_data_->back()->cell_to_face_, grid2.current_data_->back()->cell_to_face_, nf);
+    copyAndOffsetSparseTable(current_data_->back()->face_to_point_, grid2.current_data_->back()->face_to_point_, nv);
+	copyAndOffsetC2P(current_data_->back()->cell_to_point_, grid2.current_data_->back()->cell_to_point_, nv);
 
-    copyGeometery(*current_view_data_->geometry_.geomVector(std::integral_constant<int,3>()),
-                  *grid2.current_view_data_->geometry_.geomVector(std::integral_constant<int,3>()));
-    copyGeometery(*current_view_data_->geometry_.geomVector(std::integral_constant<int,1>()),
-                  *grid2.current_view_data_->geometry_.geomVector(std::integral_constant<int,1>()));
+    copyGeometery(*current_data_->back()->geometry_.geomVector(std::integral_constant<int,3>()),
+                  *grid2.current_data_->back()->geometry_.geomVector(std::integral_constant<int,3>()));
+    //copyGeometery(*current_data_->back()->geometry_.geomVector(std::integral_constant<int,1>()),
+    //              *grid2.current_data_->back()->geometry_.geomVector(std::integral_constant<int,1>()));
+    //copyGeometery(*current_data_->back()->geometry_.geomVector(std::integral_constant<int,0>()),
+    //              *grid2.current_data_->back()->geometry_.geomVector(std::integral_constant<int,0>()));
 				  
 				  
     // Cells
     //cell_geom.reserve(nc);
-    MakeGeometry<3> mcellg(current_view_data_->geometry_.geomVector(std::integral_constant<int,3>()));
+    MakeGeometry<3> mcellg(current_data_->back()->geometry_.geomVector(std::integral_constant<int,3>()));
 	cpgrid::EntityVariable<cpgrid::Geometry<3, 3>, 0> cell_geom;
 	cell_geom.reserve(nc + grid2.numCells());
 	for (int c = 0;  c < nc; ++c) {
 		auto cell_centroids = this->cellCentroid(c);
 		auto cell_volumes = this->cellVolume(c);
-		auto c2p = current_view_data_->cell_to_point_[c];
+		auto c2p = current_data_->back()->cell_to_point_[c];
 		cell_geom.push_back(mcellg(cell_centroids, cell_volumes, c2p));
+        auto this_cell = mcellg(cell_centroids, cell_volumes, c2p);
+        typename cpgrid::Geometry<3,3>::LocalCoordinate local( 0.5 );
+        std::cout << c << " " << cell_centroids << " " << this_cell.global(local) <<std::endl;
     }
     for (int c = 0;  c < grid2.numCells(); ++c) {
 		auto cell_centroids = grid2.cellCentroid(c);
 		auto cell_volumes = grid2.cellVolume(c);
-		auto c2p = current_view_data_->cell_to_point_[c+nc];
+		auto c2p = current_data_->back()->cell_to_point_[c+nc];
 		cell_geom.push_back(mcellg(cell_centroids, cell_volumes, c2p));
+        auto this_cell = mcellg(cell_centroids, cell_volumes, c2p);
+        typename cpgrid::Geometry<3,3>::LocalCoordinate local( 0.5 );
+        std::cout << c +nc << " " << cell_centroids << " " << this_cell.global(local) <<std::endl;
     }
-	*current_view_data_->geometry_.geomVector(std::integral_constant<int,0>()) = cell_geom;
+	*current_data_->back()->geometry_.geomVector(std::integral_constant<int,0>()) = cell_geom;
+    std::cout << (*current_data_->back()->geometry_.geomVector(std::integral_constant<int,0>())).size() << std::endl;
 	
-	copyGeometery(current_view_data_->face_tag_, grid2.current_view_data_->face_tag_);
-	copyGeometery(current_view_data_->face_normals_, grid2.current_view_data_->face_normals_);
+	copyGeometery(current_data_->back()->face_tag_, grid2.current_data_->back()->face_tag_);
+	copyGeometery(current_data_->back()->face_normals_, grid2.current_data_->back()->face_normals_);
 
 	// NB Needs to be fixed
-	current_view_data_->logical_cartesian_size_[2] += grid2.current_view_data_->logical_cartesian_size_[2];	
+	current_data_->back()->logical_cartesian_size_[2] += grid2.current_data_->back()->logical_cartesian_size_[2];	
 	
-	current_view_data_->index_set_ = std::make_unique<cpgrid::IndexSet>(current_view_data_->cell_to_face_.size(), (*current_view_data_->geometry_.geomVector(std::integral_constant<int,3>())).size());
+	current_data_->back()->index_set_ = std::make_unique<cpgrid::IndexSet>(current_data_->back()->cell_to_face_.size(), (*current_data_->back()->geometry_.geomVector(std::integral_constant<int,3>())).size());
 	
     return true;
 

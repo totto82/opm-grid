@@ -291,7 +291,6 @@ int main(int argc, char** argv )
         Grid grid(eclgrid, porv);
         gridcheck( grid );
         std::cout << std::endl;
-        Grid grid2(eclgrid, porv);
         
 #endif
         // test DGF grid creation capabilities

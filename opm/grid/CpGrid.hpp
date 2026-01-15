@@ -1677,7 +1677,6 @@ namespace Dune
     template<class Geo>
     void CpGrid::copyGeometery(Geo& tab1, const Geo& tab2) const {
     for (const auto& p : tab2) {
-		//std::cout << p << std::endl;
         tab1.push_back(p);
     }
 }

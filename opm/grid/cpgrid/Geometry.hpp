@@ -452,6 +452,7 @@ namespace Dune
                 GlobalCoordinate xyz(0.0);
                 for (int i = 0; i < 8; ++i) {
                     GlobalCoordinate corner_contrib = corner(i);
+                    //std::cout << i << " " << corner_contrib << std::endl;
                     double factor = 1.0;
                     for (int j = 0; j < 3; ++j) {
                         factor *= uvw[pat[i][j]][j];

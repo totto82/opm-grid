@@ -44,9 +44,9 @@ void testGridIteration( const GridView& gridView, const int nElem )
         typename Geometry::LocalCoordinate local( 0.5 );
         typename Geometry::GlobalCoordinate global = elemGeom.global( local );
         typename Geometry::GlobalCoordinate center = elemGeom.center();
-		if( (center - global).two_norm() > 1e-6 )
+        //if( (center - global).two_norm() > 1e-6 )
         {
-          std::cout << "center = " << center << " global( localCenter ) = " << global << " " << std::endl;
+          std::cout << "center = " << center << " global( localCenter ) = " << global << std::endl;
         }
 
 
@@ -105,9 +105,6 @@ void testGrid(Grid& grid, const std::string& name, const size_t nElem, const siz
 
     testGridIteration( grid.leafGridView(), nElem );
 
-	std::cout << grid.leafGridView().size(0) << std::endl;
-	std::cout << grid.leafGridView().size(1) << std::endl;
-	std::cout << grid.leafGridView().size(3) << std::endl;
     std::cout << "create vertex mapper\n";
     Dune::MultipleCodimMultipleGeomTypeMapper<GridView> mapper(grid.leafGridView(), Dune::mcmgVertexLayout());
 
@@ -173,12 +170,12 @@ int main(int argc, char** argv )
     testGrid( grid, "CpGrid_ecl", 8, 27 );
     testGrid( grid2, "CpGrid_ecl", 8, 27 );
     grid.extendGrid(grid2);
-	testGrid( grid, "CpGrid_ecl", 16, 54 );
+    testGrid( grid, "CpGrid_ecl", 16, 54 );
 
     const auto& grid_leafView = grid.leafGridView();
     Dune::CartesianIndexMapper<Grid> grid_cartMapper =  Dune::CartesianIndexMapper<Grid>(grid);
 
-	std::cout << "cart mapper " << grid_cartMapper.cartesianIndex(0) << std::endl;
+    std::cout << "cart mapper " << grid_cartMapper.cartesianIndex(0) << std::endl;
     for (const auto& element: Dune::elements(grid_leafView)){
 		//continue;
 		std::cout << "elem idx " << grid_cartMapper.cartesianIndex(element.index()) << std::endl;
@@ -193,8 +190,8 @@ int main(int argc, char** argv )
             //assert(elemEclCentroid[coord] == elemCpGridEclCentroid_Index[coord]);
 			assert(elemCpGridEclCentroid_Entity[coord] == elemCpGridEclCentroid_Index[coord]);
             //std::cout << "From Eclipse: " << elemEclCentroid[coord]
-            std::cout << " From CpGrid (Entity): " << elemCpGridEclCentroid_Entity[coord]
-                      << " From CpGrid (Index): " << elemCpGridEclCentroid_Index[coord]<< '\n';
+            //std::cout << " From CpGrid (Entity): " << elemCpGridEclCentroid_Entity[coord]
+            //          << " From CpGrid (Index): " << elemCpGridEclCentroid_Index[coord]<< '\n';
         }
         std::cout << " " << '\n';
     }

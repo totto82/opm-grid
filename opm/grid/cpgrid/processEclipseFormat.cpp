@@ -169,7 +169,6 @@ namespace cpgrid
         g.dims[2] = ecl_grid.getNZ();
         g.coord = &coordData[0];
         g.zcorn = &zcornData[0];
-        std::cout << "hello" << std::endl;
 
         g.actnum = actnumData.empty() ? nullptr : &actnumData[0];
         Opm::MinpvProcessor::Result minpv_result;
@@ -491,8 +490,6 @@ namespace cpgrid
                                         &input_data,
                                         /* is_aquifer_cell = */ nullptr,
                                         &output);
-            std::cout << "hello2 " << output.number_of_cells << std::endl;
-
         }
 
         if (process_ok == 0) {
